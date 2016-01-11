@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Basic Example with Click Counter</title>
+<script src="../../src/lantern.js"></script>
+	
+<script type="text/javascript">
+var Counter = lantern.create("Counter", "<h2>Click me! Number of clicks: {{clickCount}}</h2>");
+Counter.data.clickCount = 0;
+Counter.bind(null, "click", function()
+{
+	this.update(function()
+	{
+		this.data.clickCount++;
+	});
+});
+</script>
+</head>
+<body>
+<div align="center">
+	<Counter></Counter>
+</div>
+</body>
+</html>
