@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Basic Example</title>
+
+<link rel="stylesheet" href="../shared/css/base.css" />
+
+<script src="../../src/lantern.js"></script>
+
+<script type="text/lantern" id="ExampleApplication">
+<p>Lantern has been successfully running for {{seconds}} seconds.</p>
+</script>
+	
+<script type="text/javascript">
+var ExampleApplication = lantern.create("ExampleApplication", document.getElementById("ExampleApplication").innerHTML);
+ExampleApplication.data.seconds = 0;
+
+window.addEventListener("load", function()
+{
+	var start = new Date().getTime();
+	var container = document.getElementById("container");
+	
+	setInterval(function()
+	{
+		container.lantern.update(function()
+		{
+			var elapsed = new Date().getTime() - start;
+			elapsed = Math.round(elapsed  / 100);
+			
+			this.data.seconds = elapsed / 10 + (elapsed % 10 ? '' : '.0' );
+		});	
+	}, 50);
+});
+</script>
+</head>
+<body>
+<h1>Basic Example</h1>
+<ExampleApplication id="container"></ExampleApplication>
+</body>
+</html>

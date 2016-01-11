@@ -1,10 +1,11 @@
 # Lantern
 
 Lantern is a JavaScript library for building user interfaces.
+- ##### From React : <span style="font-weight:normal;">Lantern borrowed an idea and example sources from react.</span>
 
 ## Example
 ```
-<script type="text" id="HelloWorld">
+<script type="text/lantern" id="HelloWorld">
 <h1>Hello {{name}}!</h1>
 </script>
 
