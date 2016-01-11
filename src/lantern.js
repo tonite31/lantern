@@ -21,7 +21,13 @@ var lantern = {};
 	Component.prototype.update = function(func)
 	{
 		if(func)
-			func.call(this);
+		{
+			//어떤 방법으로 동기인지 비동기인지 판단해서 한쪽만 콜 해주는게 좋겠다.
+			func.call(this, function()
+			{
+				this.bindData();
+			});
+		}
 		
 		this.bindData();
 	};
@@ -160,21 +166,20 @@ var lantern = {};
 			}
 		}
 		
-		component.bindData();
-		
 		if(this.life.onLoad)
 		{
 			this.life.onLoad.call(component, function()
 			{
+				component.bindData();
 				target.parentElement.replaceChild(component.element, target);
 				lantern.compile(component.element);
 			});
 		}
-		else
-		{
-			target.parentElement.replaceChild(component.element, target);
-			lantern.compile(component.element);
-		}
+		
+		component.bindData();
+			
+		target.parentElement.replaceChild(component.element, target);
+		lantern.compile(component.element);
 	};
 	
 	/**
