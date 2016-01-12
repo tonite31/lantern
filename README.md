@@ -27,13 +27,17 @@ HelloWorld.data.name = "your name";
 </body>
 </html>
 ```
-see [jsfiddle](https://jsfiddle.net/Alprensia/w8gr05sn/3/)
+see [jsfiddle](https://jsfiddle.net/Alprensia/w8gr05sn/3/).
+
+
 
 #### Using "data-" attribute
 ```
 <HelloWorld data-name="Lantern"></HelloWorld>
 ```
-see [jsfiddle](https://jsfiddle.net/Alprensia/0yz7kfef/1/)
+see [jsfiddle](https://jsfiddle.net/Alprensia/0yz7kfef/1/).
+
+
 
 #### Bind event to component
 ```
@@ -54,9 +58,11 @@ HelloWorld.bind("button", "click", function() //If first parameter is null, then
 	alert("Hello " + this.data.name + "!");
 });
 ```
-see [jsfiddle](https://jsfiddle.net/Alprensia/0yz7kfef/2/)
+see [jsfiddle](https://jsfiddle.net/Alprensia/0yz7kfef/2/).
 
-#### Dynamic update
+
+
+#### Dynamic update to data using lantern object in element
 ```
 <!DOCTYPE html>
 <html>
@@ -100,9 +106,11 @@ window.addEventListener("load", function()
 </body>
 </html>
 ```
-see [jsfiddle](https://jsfiddle.net/Alprensia/2kzfphmt/1/)
+see [jsfiddle](https://jsfiddle.net/Alprensia/2kzfphmt/1/).
 
-#### If you want to manipulate data on loaded component.
+
+
+#### Manipulate data on load
 ```
 <!DOCTYPE html>
 <html>
@@ -127,4 +135,4 @@ HelloWorld.life =
 </body>
 </html>
 ```
-see [jsfiddle](https://jsfiddle.net/Alprensia/ah5nryf6/1/)
+see [jsfiddle](https://jsfiddle.net/Alprensia/ah5nryf6/1/).
