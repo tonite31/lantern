@@ -5,7 +5,7 @@ Lantern is a JavaScript library for building user interfaces.
 Lantern borrowed an idea and example sources from react.
 
 ## Example
-```
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -32,7 +32,7 @@ see [jsfiddle](https://jsfiddle.net/Alprensia/w8gr05sn/3/).
 
 
 #### Using "data-" attribute
-```
+```html
 <HelloWorld data-name="Lantern"></HelloWorld>
 ```
 see [jsfiddle](https://jsfiddle.net/Alprensia/0yz7kfef/1/).
@@ -40,7 +40,7 @@ see [jsfiddle](https://jsfiddle.net/Alprensia/0yz7kfef/1/).
 
 
 #### Bind event to component
-```
+```javascript
 var HelloWorld = lantern.create("HelloWorld", "<h1>Hello {{name}}!</h1>");
 HelloWorld.data.name = "your name";
 HelloWorld.bind(null/*selector*/, "click", function() //If first parameter is null, then bind event to top element. in this case, '<h1>'.
@@ -50,7 +50,7 @@ HelloWorld.bind(null/*selector*/, "click", function() //If first parameter is nu
 ```
 see [jsfiddle](https://jsfiddle.net/Alprensia/cv9dujod/1/)
 
-```
+```javascript
 var HelloWorld = lantern.create("HelloWorld", "<div><h1>Hello {{name}}!</h1><button type='button'>Click here!</button></div>");
 HelloWorld.data.name = "Lantern";
 HelloWorld.bind("button", "click", function() //If first parameter is null, then bind event to top element. in this case, '<div>'.
@@ -63,7 +63,7 @@ see [jsfiddle](https://jsfiddle.net/Alprensia/0yz7kfef/2/).
 
 
 #### Dynamic update to data using lantern object in element
-```
+```html
 <!DOCTYPE html>
 <html>
 <head>
@@ -110,8 +110,8 @@ see [jsfiddle](https://jsfiddle.net/Alprensia/2kzfphmt/1/).
 
 
 
-#### Manipulate data on load
-```
+#### Manipulate data after element is loaded
+```html
 <!DOCTYPE html>
 <html>
 <head>
