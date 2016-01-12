@@ -123,10 +123,11 @@ var lantern = {};
 			}
 			else
 			{
-				if(typeof component.data[attr.name] == "number")
-					component.data[attr.name] = new Number(attr.value);
+				var name = attr.name.replace("data-", "");
+				if(typeof component.data[name] == "number")
+					component.data[name] = new Number(attr.value);
 				else
-					component.data[attr.name] = attr.value;
+					component.data[name] = attr.value;
 			}
 		}
 		
