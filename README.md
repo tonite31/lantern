@@ -53,7 +53,7 @@ see [jsfiddle](https://jsfiddle.net/Alprensia/cv9dujod/1/)
 ```
 var HelloWorld = lantern.create("HelloWorld", "<div><h1>Hello {{name}}!</h1><button type='button'>Click here!</button></div>");
 HelloWorld.data.name = "Lantern";
-HelloWorld.bind("button", "click", function() //If first parameter is null, then bind event to top element. in this case, '<h1>'.
+HelloWorld.bind("button", "click", function() //If first parameter is null, then bind event to top element. in this case, '<div>'.
 {
 	alert("Hello " + this.data.name + "!");
 });
