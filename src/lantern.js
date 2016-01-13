@@ -2,10 +2,6 @@
  * lantern v0.0.1
  */
 
-/**
- * 여기엔 고민이나 해야할것들.
- */
-
 var lantern = {};
 
 (function()
@@ -22,11 +18,19 @@ var lantern = {};
 	{
 		if(func)
 		{
-			//어떤 방법으로 동기인지 비동기인지 판단해서 한쪽만 콜 해주는게 좋겠다.
-			func.call(this, function()
+			if(func.length == 1)
 			{
-				this.bindData();
-			});
+				func.call(this, function()
+				{
+					this.bindData();
+				});
+				
+				return;
+			}
+			else
+			{
+				func.call(this);
+			}
 		}
 		
 		this.bindData();
@@ -169,12 +173,21 @@ var lantern = {};
 		
 		if(this.life.onLoad)
 		{
-			this.life.onLoad.call(component, function()
+			if(this.life.onLoad.length == 1)
 			{
-				component.bindData();
-				target.parentElement.replaceChild(component.element, target);
-				lantern.compile(component.element);
-			});
+				this.life.onLoad.call(component, function()
+				{
+					component.bindData();
+					target.parentElement.replaceChild(component.element, target);
+					lantern.compile(component.element);
+				});
+				
+				return;
+			}
+			else
+			{
+				this.life.onLoad.call(component);
+			}
 		}
 		
 		component.bindData();
