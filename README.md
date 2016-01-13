@@ -154,6 +154,7 @@ LanternObject.life.onLoad = function(done)
 ```javascript
 element.lantern.update(function(done)
 {
+	var that = this;
 	requestToRemoteServer(function(result)
 	{
 		that.data.result = result;
