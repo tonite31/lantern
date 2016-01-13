@@ -136,3 +136,44 @@ HelloWorld.life =
 </html>
 ```
 see [jsfiddle](https://jsfiddle.net/Alprensia/ah5nryf6/1/).
+
+
+
+#### If you use callback structure in onLoad or update
+You must call a "done();" function.
+```javascript
+LanternObject.life.onLoad = function(done)
+{
+	requestToRemoteServer(function(result)
+	{
+		console.log(result);
+		done();		
+	});
+};
+```
+```javascript
+element.lantern.update(function(done)
+{
+	requestToRemoteServer(function(result)
+	{
+		console.log(result);
+		done();		
+	});
+});	
+```
+
+If you call a "update" function in onLoad, You call "done();" just one time at last.
+```javascript
+LanternObject.life.onLoad = function(done)
+{
+	var that = this;
+	requestToRemoteServer(function(result)
+	{
+		that.update(function(done)
+		{
+			this.data.result = result;
+			done();		
+		});
+	});
+};
+```
