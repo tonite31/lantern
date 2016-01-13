@@ -156,13 +156,13 @@ element.lantern.update(function(done)
 {
 	requestToRemoteServer(function(result)
 	{
-		console.log(result);
+		this.data.result = result;
 		done();		
 	});
 });	
 ```
 
-If you call a "update" function in onLoad, You call "done();" just one time at last.
+If you call a "update" function in onLoad, call "done();" just one time at last.
 ```javascript
 LanternObject.life.onLoad = function(done)
 {
