@@ -1,17 +1,21 @@
 /**
- * lantern v0.0.1
+ * lantern v0.1.0
  */
 
 var lantern = {};
 
 (function()
 {
-	var Component = function(data, element)
+	var Component = function(data, element, parent)
 	{
 		this.oldData = {};
 		this.data = data;
 		this.element = element;
 		this.element.lantern = this;
+		this.parent = parent;
+		this.children = [];
+		if(this.parent)
+			this.parent.children.push(this);
 	};
 
 	Component.prototype.update = function(func)
@@ -46,6 +50,13 @@ var lantern = {};
 		var nodeList = [];
 		
 		//데이터가 달라진것만 찾아서 교체한다.
+		//스코프 유지를 위해 children을 임시로 제거했다가 붙인다.
+		for(var i=0; i<this.children.length; i++)
+		{
+			this.children[i].element._parentElement = this.children[i].element.parentElement;
+			this.children[i].element.parentElement.removeChild(this.children[i].element);
+		}
+		
 		for(var key in this.data)
 		{
 			if(this.data[key] != this.oldData[key])
@@ -64,6 +75,9 @@ var lantern = {};
 				}
 			}
 		}
+		
+		for(var i=0; i<this.children.length; i++)
+			this.children[i].element._parentElement.appendChild(this.children[i].element);
 		
 		//ie는 노드필터랑 필터함수를 지원 못한다고 그랬는데...
 		for(var i=0; i<nodeList.length; i++)
@@ -93,6 +107,21 @@ var lantern = {};
 		this.oldData = JSON.parse(JSON.stringify(this.data));
 	};
 	
+	Component.prototype.bindBody = function(body)
+	{
+		var html = this.element.innerHTML;
+		var matchList = html.match(/{body}/gi);
+		if(matchList)
+		{
+			for(var i=0; i<matchList.length; i++)
+			{
+				html = html.replace(matchList[i], body);
+			}
+		}
+		
+		this.element.innerHTML = html;
+	};
+	
 	/**
 	 * Factory 실제 컴포넌트 객체를 생성하는 공장
 	 */
@@ -110,9 +139,9 @@ var lantern = {};
 		this.eventList.push({target : target, eventName : eventName, callback : callback, useCapture : useCapture});
 	};
 	
-	Factory.prototype.create = function(target)
+	Factory.prototype.create = function(target, parent)
 	{
-		var component = new Component(this.data, this.element.cloneNode(true));
+		var component = new Component(this.data, this.element.cloneNode(true), parent);
 		
 		/**
 		 * 타겟의 속성으로부터 속성과 데이터속성을 분리하는 과정
@@ -191,7 +220,8 @@ var lantern = {};
 		}
 		
 		component.bindData();
-			
+		component.bindBody(target.innerHTML);
+		
 		target.parentElement.replaceChild(component.element, target);
 		lantern.compile(component.element);
 	};
@@ -200,27 +230,30 @@ var lantern = {};
 	 * -----------------------------------------------------------------------------
 	 */
 	
-	this.componentList = {};
+	this.factory = {};
 	
 	this.create = function(id, html)
 	{
 		var div = document.createElement("div");
  		div.innerHTML = html;
 		
-		return this.componentList[id] = new Factory(id, div.children[0]);
+		return this.factory[id] = new Factory(id, div.children[0]);
 	};
 	
 	this.compile = function(doc)
 	{
-		for(var key in this.componentList)
+		for(var key in this.factory)
 		{
-			var factory = this.componentList[key];
+			var factory = this.factory[key];
+
+			var id = new Date().getTime();
+			doc.setAttribute("data-lantern-id", id);
 			
-			var list = doc.querySelectorAll(key);
+			var list = doc.parentElement.querySelectorAll(doc.nodeName + "[data-lantern-id='" + id + "'] > " + key);
 			var length = list.length;
 			for(var i=0; i<length; i++)
 			{
-				factory.create(list[i]);
+				factory.create(list[i], doc.lantern ? doc.lantern : null);
 			}
 		}
 	};
@@ -230,6 +263,6 @@ var lantern = {};
 {
 	window.addEventListener("load", function()
 	{
-		lantern.compile(document);
+		lantern.compile(document.body);
 	});
 })();
