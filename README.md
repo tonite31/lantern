@@ -178,3 +178,41 @@ LanternObject.life.onLoad = function(done)
 	});
 };
 ```
+
+
+
+#### Multiple component
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE"/>
+
+<script src="../../src/lantern.js"></script>
+
+<title>Title</title>
+
+<script type="text/template" id="Children">
+<p>
+	Hello {body}
+</p>
+</script>
+
+<script type="text/template" id="Parent">
+<div>{body}{body}</div>
+</script>
+
+<script>
+var Parent = lantern.create("Parent", document.getElementById("Parent").innerHTML);
+var Children = lantern.create("Children", document.getElementById("Children").innerHTML);
+</script>
+
+</head>
+
+<body>
+<Parent><Children>asdf</Children></Parent>
+</body>
+
+</html>
+```
