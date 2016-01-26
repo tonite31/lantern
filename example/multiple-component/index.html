@@ -8,25 +8,45 @@
 
 <title>Title</title>
 
-<script type="text/template" id="Children">
-<p>
-	Hello {body}
-</p>
+<script type="text/template" id="Child">
+<div>
+<p>Hello {body}</p>
+<p style='color: #aa468c;'>Here is {{seconds}}</p>
+</div>
 </script>
 
 <script type="text/template" id="Parent">
-<div>{body}{body}</div>
+<div>{body}{body}<p>Lantern has been successfully running for {{seconds}} seconds.</p></div>
 </script>
 
 <script>
 var Parent = lantern.create("Parent", document.getElementById("Parent").innerHTML);
-var Children = lantern.create("Children", document.getElementById("Children").innerHTML);
+var Child = lantern.create("Child", document.getElementById("Child").innerHTML);
+
+window.addEventListener('load', function()
+{
+	var start = new Date().getTime();
+	
+	setInterval(function()
+	{
+		var parent = document.getElementById('parent');
+		parent.lantern.update(function()
+		{
+			var elapsed = new Date().getTime() - start;
+			elapsed = Math.round(elapsed  / 100);
+			
+			this.data.seconds = elapsed / 10 + (elapsed % 10 ? '' : '.0' );
+			this.children[0].data.seconds = new Date().getTime();
+		});	
+	}, 30);
+});
+
 </script>
 
 </head>
 
 <body>
-<Parent><Children>asdf</Children></Parent>
+<Parent id='parent'><Child>asdf</Child></Parent>
 </body>
 
 </html>
