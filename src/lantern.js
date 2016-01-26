@@ -6,10 +6,32 @@ var lantern = {};
 
 (function()
 {
+	function extend(target)
+	{
+	    var sources = [].slice.call(arguments, 1);
+	    sources.forEach(function (source) {
+	        for (var prop in source) {
+	            target[prop] = source[prop];
+	        }
+	    });
+	    return target;
+	};
+	
+	function generateUUID()
+	{
+	    var d = new Date().getTime();
+	    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+	        var r = (d + Math.random()*16)%16 | 0;
+	        d = Math.floor(d/16);
+	        return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+	    });
+	    return uuid;
+	};
+	
 	var Component = function(data, element, parent)
 	{
 		//이 시점에는 스크립트 템플릿만 들어있다. 하위 컴포넌트는 {body}로 들어있음.
-		this.id = new Date().getTime();
+		this.id = generateUUID();
 		this.element = element;
 		this.element.lantern = this;
 		
@@ -19,7 +41,7 @@ var lantern = {};
 			this.parent.children.push(this);
 		
 		this.oldData = {};
-		this.data = data;
+		this.data = extend({}, data);
 		
 		this.init();
 	};
@@ -257,7 +279,7 @@ var lantern = {};
 		{
 			var factory = this.factory[key];
 
-			var id = new Date().getTime();
+			var id = generateUUID();
 			doc.setAttribute("data-lantern-id", id);
 			
 			if(doc.parentElement)
@@ -269,8 +291,11 @@ var lantern = {};
 					factory.create(list[i], doc.lantern ? doc.lantern : null);
 				}
 			}
+			
+			doc.removeAttribute("data-lantern-id");
 		}
 	};
+	
 }).call(lantern);
 
 (function()
