@@ -1,5 +1,8 @@
 #History
 
+## 0.1.1
+Fix bug related data scope on each component.
+
 ## 0.1.0
 Lantern support multiple component. see multiple-component example.
 
