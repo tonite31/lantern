@@ -8,14 +8,35 @@ var lantern = {};
 {
 	var Component = function(data, element, parent)
 	{
-		this.oldData = {};
-		this.data = data;
+		//이 시점에는 스크립트 템플릿만 들어있다. 하위 컴포넌트는 {body}로 들어있음.
+		this.id = new Date().getTime();
 		this.element = element;
 		this.element.lantern = this;
+		
 		this.parent = parent;
 		this.children = [];
 		if(this.parent)
 			this.parent.children.push(this);
+		
+		this.oldData = {};
+		this.data = data;
+		
+		this.init();
+	};
+	
+	Component.prototype.init = function()
+	{
+		var matchList = this.element.innerHTML.match(/{{[^}]*}}/gi);
+		if(matchList)
+		{
+			for(var i=0; i<matchList.length; i++)
+			{
+				var key = matchList[i].replace("{{", "").replace("}}", "");
+				this.data[key] = undefined;
+			}
+		}
+		
+		this.element.innerHTML = this.element.innerHTML.replace('{{', '{{' + this.id + ':');
 	};
 
 	Component.prototype.update = function(func)
@@ -24,9 +45,10 @@ var lantern = {};
 		{
 			if(func.length == 1)
 			{
+				var that = this;
 				func.call(this, function()
 				{
-					this.bindData();
+					that.bindData();
 				});
 				
 				return;
@@ -34,6 +56,10 @@ var lantern = {};
 			else
 			{
 				func.call(this);
+				for(var i=0; i<this.children.length; i++)
+				{
+					this.children[i].update();
+				}
 			}
 		}
 		
@@ -47,23 +73,16 @@ var lantern = {};
 
 	Component.prototype.bindData = function()
 	{
+		var that = this;
 		var nodeList = [];
-		
-		//데이터가 달라진것만 찾아서 교체한다.
-		//스코프 유지를 위해 children을 임시로 제거했다가 붙인다.
-		for(var i=0; i<this.children.length; i++)
-		{
-			this.children[i].element._parentElement = this.children[i].element.parentElement;
-			this.children[i].element.parentElement.removeChild(this.children[i].element);
-		}
 		
 		for(var key in this.data)
 		{
-			if(this.data[key] != this.oldData[key])
+			if((this.data[key] != this.oldData[key]) || (this.data.hasOwnProperty(key) && !this.oldData.hasOwnProperty(key))) //최초 컴포넌트 템플릿에 명시되어있는 데이터 중에서 바뀐것만 체크한다. 그럼 스코프 체크하..... 키값이 동일하다면 문제가 될듯.
 			{
 				var filter = function(node)
 				{
-					var regx = new RegExp("{{" + key + "}}", "gi");
+					var regx = new RegExp("{{" + that.id + ":" + key + "}}", "gi");
 					return node.originalText ? regx.test(node.originalText) : regx.test(node.textContent);
 				};
 				
@@ -76,10 +95,6 @@ var lantern = {};
 			}
 		}
 		
-		for(var i=0; i<this.children.length; i++)
-			this.children[i].element._parentElement.appendChild(this.children[i].element);
-		
-		//ie는 노드필터랑 필터함수를 지원 못한다고 그랬는데...
 		for(var i=0; i<nodeList.length; i++)
 		{
 			var node = nodeList[i];
@@ -91,15 +106,17 @@ var lantern = {};
 			var matchList = text.match(/{{[^}]*}}/gi);
 			if(matchList)
 			{
+				var isChanged = false;
 				for(var j=0; j<matchList.length; j++)
 				{
 					var key = matchList[j].replace("{{", "").replace("}}", "");
+					key = key.split(":")[1];
 					text = text.replace(matchList[j], this.data[key]);
 				}
 				
 				var newNode = document.createTextNode(text);
 				newNode.originalText = node.originalText;
-				
+
 				node.parentElement.replaceChild(newNode, node);
 			}
 		}
@@ -109,17 +126,7 @@ var lantern = {};
 	
 	Component.prototype.bindBody = function(body)
 	{
-		var html = this.element.innerHTML;
-		var matchList = html.match(/{body}/gi);
-		if(matchList)
-		{
-			for(var i=0; i<matchList.length; i++)
-			{
-				html = html.replace(matchList[i], body);
-			}
-		}
-		
-		this.element.innerHTML = html;
+		this.element.innerHTML = this.element.innerHTML.replace(/{body}/gi, body);
 	};
 	
 	/**
@@ -219,10 +226,14 @@ var lantern = {};
 			}
 		}
 		
-		component.bindData();
+		//아래 두개 순서가 바뀌면 node.originalText 변수가 날아가서 데이터 바인딩이 제대로 안된다.
+		//body를 먼저 바인드해도 스코프를 유지해서 바인드 하도록 처리해뒀기 때문에 괜찮다.
 		component.bindBody(target.innerHTML);
+		component.bindData();
 		
-		target.parentElement.replaceChild(component.element, target);
+		if(target.parentElement)
+			target.parentElement.replaceChild(component.element, target);
+		
 		lantern.compile(component.element);
 	};
 	
@@ -249,11 +260,14 @@ var lantern = {};
 			var id = new Date().getTime();
 			doc.setAttribute("data-lantern-id", id);
 			
-			var list = doc.parentElement.querySelectorAll(doc.nodeName + "[data-lantern-id='" + id + "'] > " + key);
-			var length = list.length;
-			for(var i=0; i<length; i++)
+			if(doc.parentElement)
 			{
-				factory.create(list[i], doc.lantern ? doc.lantern : null);
+				var list = doc.parentElement.querySelectorAll(doc.nodeName + "[data-lantern-id='" + id + "'] > " + key);
+				var length = list.length;
+				for(var i=0; i<length; i++)
+				{
+					factory.create(list[i], doc.lantern ? doc.lantern : null);
+				}
 			}
 		}
 	};
