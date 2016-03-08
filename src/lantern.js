@@ -1,5 +1,5 @@
 /**
- * lantern v0.1.0
+ * lantern v0.1.1
  */
 
 var lantern = {};
