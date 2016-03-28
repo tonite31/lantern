@@ -1,5 +1,5 @@
 /**
- * lantern v0.1.1
+ * lantern v0.1.2
  */
 
 var lantern = {};
@@ -40,6 +40,10 @@ var lantern = {};
 		if(this.parent)
 			this.parent.children.push(this);
 		
+		this.custom = {};
+		
+		this.elementListForDataChanging = [];
+		
 		this.oldData = {};
 		this.data = extend({}, data);
 		
@@ -54,11 +58,63 @@ var lantern = {};
 			for(var i=0; i<matchList.length; i++)
 			{
 				var key = matchList[i].replace("{{", "").replace("}}", "");
-				this.data[key] = undefined;
+				if(!this.data.hasOwnProperty(key))
+					this.data[key] = undefined;
 			}
 		}
 		
-		this.element.innerHTML = this.element.innerHTML.replace('{{', '{{' + this.id + ':');
+		var html = this.element.innerHTML.replace(/{{/gi, '{{' + this.id + ':');
+		matchList = html.match(/<[^>]*{{[^}]*}}[^>]*>/gi);
+		if(matchList)
+		{
+			for(var i=0; i<matchList.length; i++)
+			{
+				html = html.replace(matchList[i], matchList[i].replace(">", " data-lantern>"));
+			}
+		}
+		
+		matchList = html.match(/<[^>]*{body}[^>]*>/gi);
+		if(matchList)
+		{
+			for(var i=0; i<matchList.length; i++)
+			{
+				html = html.replace(matchList[i], matchList[i].replace(">", " data-lantern-body>"));
+			}
+		}
+		
+		this.element.innerHTML = html;
+		
+		var checkAttrData = function(element)
+		{
+			for(var j=0; j<element.attributes.length; j++)
+			{
+				var value = element.attributes[j].value;
+				if(value.match(/{{[^}]*}}/gi))
+				{
+					if(value.indexOf(":") == -1)
+					{
+						value = value.replace(/{{/gi, '{{' + this.id + ':');
+						element.attributes[j].value = value;
+					}
+					
+					if(!element.changing)
+					{
+						element.changing = {};
+						this.elementListForDataChanging.push(element);
+					}
+					
+					element.changing[element.attributes[j].name] = value;
+				}
+			}
+			
+			element.removeAttribute("data-lantern");
+		};
+		
+		var elementList = this.element.querySelectorAll("*[data-lantern]");
+		for(var i=0; i<elementList.length; i++)
+			checkAttrData.call(this, elementList[i]);
+		
+		checkAttrData.call(this, this.element);
 	};
 
 	Component.prototype.update = function(func)
@@ -121,6 +177,9 @@ var lantern = {};
 		{
 			var node = nodeList[i];
 			
+			if(!node.parentElement)
+				continue;
+			
 			var text = node.originalText;
 			if(!text)
 				text = node.originalText = node.textContent;
@@ -128,7 +187,6 @@ var lantern = {};
 			var matchList = text.match(/{{[^}]*}}/gi);
 			if(matchList)
 			{
-				var isChanged = false;
 				for(var j=0; j<matchList.length; j++)
 				{
 					var key = matchList[j].replace("{{", "").replace("}}", "");
@@ -143,12 +201,94 @@ var lantern = {};
 			}
 		}
 		
+		for(var i=0; i<this.elementListForDataChanging.length; i++)
+		{
+			for(var attrKey in this.elementListForDataChanging[i].changing)
+			{
+				var value = this.elementListForDataChanging[i].changing[attrKey];
+				var matchList = value.match(/{{[^}]*}}/gi);
+				if(matchList)
+				{
+					for(var j=0; j<matchList.length; j++)
+					{
+						var key = matchList[j].replace("{{", "").replace("}}", "");
+						var scope = key.split(":");
+						key = scope[1];
+						scope = scope[0];
+						
+						if(scope == this.id)
+							value = value.replace(matchList[j], this.data[key]);
+						
+						this.elementListForDataChanging[i].setAttribute(attrKey, value);
+					}
+				}
+			}
+		}
+		
 		this.oldData = JSON.parse(JSON.stringify(this.data));
 	};
 	
-	Component.prototype.bindBody = function(body)
+	Component.prototype.bindBody = function(target)
 	{
-		this.element.innerHTML = this.element.innerHTML.replace(/{body}/gi, body);
+		var nodeList = [];
+		var filter = function(node)
+		{
+			var regx = new RegExp("{body}", "gi");
+			return regx.test(node.textContent);
+		};
+		
+		var node = null;
+		var walker = document.createTreeWalker(this.element, NodeFilter.SHOW_TEXT, filter, false);
+		while(node = walker.nextNode())
+		{
+			nodeList.push(node);
+		}
+		
+		for(var i=0; i<nodeList.length; i++)
+		{
+			var node = nodeList[i];
+			var text = node.textContent;
+			var matchList = text.match(/{body}/gi);
+			if(matchList)
+			{
+				var isChanged = false;
+				for(var j=0; j<matchList.length; j++)
+				{
+					text = text.replace(matchList[j], "<bindBodyTarget></bindBodyTarget>");
+				}
+
+				//만약 tbody등의 것들이 왔을때 없어질수도 있는데.
+				var div = document.createElement("div");
+				div.innerHTML = text;
+				
+				var body = div.querySelector("bindBodyTarget");
+				while(target.childNodes.length > 0)
+					div.insertBefore(target.childNodes[0], body);
+				
+				div.removeChild(body);
+				
+				var frag = document.createDocumentFragment();
+				while(div.childNodes.length > 0)
+					frag.appendChild(div.childNodes[0]);
+				
+				node.parentElement.replaceChild(frag, node);
+			}
+		}
+		
+		var elementList = this.element.querySelectorAll("*[data-lantern-body]");
+		for(var i=0; i<elementList.length; i++)
+		{
+			for(var j=0; j<elementList[i].attributes.length; j++)
+			{
+				var value = elementList[i].attributes[j].value;
+				if(value.match(/{body}/gi))
+				{
+					elementList[i].attributes[j].value = value.replace(/{body}/, target.innerText);
+				}
+			}
+			
+			elementList[i].removeAttribute("data-lantern-body");
+		}
 	};
 	
 	/**
@@ -160,6 +300,7 @@ var lantern = {};
 		this.element = element;
 		this.eventList = [];
 		this.life = {onLoad : null};
+		this.custom = {};
 		this.data = {};
 	};
 
@@ -181,7 +322,19 @@ var lantern = {};
 			var attr = attributes[i];
 			if(attr.name.indexOf("data-") == -1)
 			{
-				component.setAttribute(attr.name, attr.value);
+				if(attr.name == "class")
+				{
+					var classList = attr.value.split(" ");
+					for(var j=0; j<classList.length; j++)
+					{
+						if(classList[j].trim())
+							component.element.classList.add(classList[j]);
+					}
+				}
+				else
+				{
+					component.setAttribute(attr.name, attr.value);
+				}
 			}
 			else
 			{
@@ -190,6 +343,57 @@ var lantern = {};
 					component.data[name] = new Number(attr.value);
 				else
 					component.data[name] = attr.value;
+			}
+		}
+		
+		//아래 두개 순서가 바뀌면 node.originalText 변수가 날아가서 데이터 바인딩이 제대로 안된다.
+		//body를 먼저 바인드해도 스코프를 유지해서 바인드 하도록 처리해뒀기 때문에 괜찮다.
+		component.bindBody(target);
+		component.bindData();
+
+		if(target.parentElement)
+		{
+			var isEquals = component.element.querySelector(target.nodeName);
+			if(isEquals)
+			{
+				throw "Target '" + target.nodeName + "' is equals to '" + isEquals.nodeName + "' in " + component.element.outerHTML;
+				target.parentElement.removeChild(target);
+				return;
+			}
+			
+			target.parentElement.replaceChild(component.element, target);
+		}
+		
+		lantern.compile(component.element);
+		
+		if(this.life.onLoad)
+		{
+			if(this.life.onLoad.length == 1)
+			{
+				this.life.onLoad.call(component, function()
+				{
+					component.bindData();
+					target.parentElement.replaceChild(component.element, target);
+					lantern.compile(component.element);
+				});
+				
+				return;
+			}
+			else
+			{
+				this.life.onLoad.call(component);
+			}
+		}
+		
+		if(this.custom)
+		{
+			for(var key in this.custom)
+			{
+				var that = this;
+				component.custom[key] = function()
+				{
+					that.custom[key].apply(component, arguments);
+				};
 			}
 		}
 		
@@ -218,45 +422,19 @@ var lantern = {};
 			var elementLength = element.length;
 			for(var j=0; j<elementLength; j++)
 			{
-				(function()
+				(function(element)
 				{
 					var callback = this.callback;
-					element[j].addEventListener(event.eventName, function(e)
+					element.addEventListener(event.eventName, function(e)
 					{
-						callback.call(component, e);
+						element.lantern = component;
+						callback.call(element, e);
 					}, this.useCapture);
-				}).call(event);
+				}).call(event, element[j]);
 			}
 		}
 		
-		if(this.life.onLoad)
-		{
-			if(this.life.onLoad.length == 1)
-			{
-				this.life.onLoad.call(component, function()
-				{
-					component.bindData();
-					target.parentElement.replaceChild(component.element, target);
-					lantern.compile(component.element);
-				});
-				
-				return;
-			}
-			else
-			{
-				this.life.onLoad.call(component);
-			}
-		}
-		
-		//아래 두개 순서가 바뀌면 node.originalText 변수가 날아가서 데이터 바인딩이 제대로 안된다.
-		//body를 먼저 바인드해도 스코프를 유지해서 바인드 하도록 처리해뒀기 때문에 괜찮다.
-		component.bindBody(target.innerHTML);
-		component.bindData();
-		
-		if(target.parentElement)
-			target.parentElement.replaceChild(component.element, target);
-		
-		lantern.compile(component.element);
+		return component.element;
 	};
 	
 	/**
@@ -267,41 +445,93 @@ var lantern = {};
 	
 	this.create = function(id, html)
 	{
-		var div = document.createElement("div");
- 		div.innerHTML = html;
-		
-		return this.factory[id] = new Factory(id, div.children[0]);
+		if(typeof html == "string")
+		{
+			var div = document.createElement("div");
+	 		div.innerHTML = html;
+			
+			return this.factory[id] = new Factory(id, div.children[0]);
+		}
+		else
+		{
+			throw "html of '" + id + "' is not string."
+			return null;
+		}
 	};
 	
-	this.compile = function(doc)
+	this.compile = function(element, name)
 	{
-		for(var key in this.factory)
+		if(name)
 		{
-			var factory = this.factory[key];
-
-			var id = generateUUID();
-			doc.setAttribute("data-lantern-id", id);
+			var factory = this.factory[name];
+			if(factory)
+				element = factory.create(element);
+			else
+				throw "Cloud not found '" + name + "'";
 			
-			if(doc.parentElement)
+			this.setParent(element);
+			
+			return element.lantern;
+		}
+		else
+		{
+			for(var key in this.factory)
 			{
-				var list = doc.parentElement.querySelectorAll(doc.nodeName + "[data-lantern-id='" + id + "'] > " + key);
+				var factory = this.factory[key];
+				
+				var list = element.querySelectorAll(key);
 				var length = list.length;
 				for(var i=0; i<length; i++)
 				{
-					factory.create(list[i], doc.lantern ? doc.lantern : null);
+					list[i].setAttribute("data-lantern-object", "");
+					factory.create(list[i]);
 				}
 			}
-			
-			doc.removeAttribute("data-lantern-id");
+
+			var list = element.querySelectorAll("*[data-lantern-object]");
+			for(var i=0; i<list.length; i++)
+			{
+				this.setParent(list[i]);
+				list[i].removeAttribute("data-lantern-object");
+			}
+		}
+	};
+	
+	this.setParent = function(element)
+	{
+		var parent = element.parentElement;
+		while(parent && parent != document.body)
+		{
+			if(parent.lantern)
+			{
+				element.lantern.parent = parent.lantern;
+				break;
+			}
+			else
+			{
+				parent = parent.parentElement;
+			}
 		}
 	};
 	
 }).call(lantern);
 
+var $ = $ ? $ : false;
+
 (function()
 {
-	window.addEventListener("load", function()
+	if($)
 	{
-		lantern.compile(document.body);
-	});
+		$(document).ready(function()
+		{
+			lantern.compile(document.body);
+		});
+	}
+	else
+	{
+		window.addEventListener("load", function()
+		{
+			lantern.compile(document.body);
+		});
+	}
 })();

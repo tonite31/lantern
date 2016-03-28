@@ -1,7 +1,14 @@
 #History
 
+## 0.1.2
+Fixed bug related set a class attribute.
+Updated lantern compile timing when using jQuery.
+Changed logic that bind syntax "{body}" innerHTML to node replacing.
+Fixed bugs.
+Added a dynamic compile.
+
 ## 0.1.1
-Fix bug related data scope on each component.
+Fixed bug related data scope on each component.
 
 ## 0.1.0
 Lantern support multiple component. see multiple-component example.
