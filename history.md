@@ -1,5 +1,8 @@
 #History
 
+## 0.1.3
+Fixed bug related create lantern object.
+
 ## 0.1.2
 Fixed bug related set a class attribute.
 Updated lantern compile timing when using jQuery.

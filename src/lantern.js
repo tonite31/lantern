@@ -258,18 +258,21 @@ var lantern = {};
 				}
 
 				//만약 tbody등의 것들이 왔을때 없어질수도 있는데.
-				var div = document.createElement("div");
-				div.innerHTML = text;
+				var parser = new DOMParser();
+				var doc = parser.parseFromString(text, "text/xml");
 				
-				var body = div.querySelector("bindBodyTarget");
+//				var div = document.createElement("div");
+//				div.innerHTML = text;
+				
+				var body = doc.querySelector("bindBodyTarget");
 				while(target.childNodes.length > 0)
-					div.insertBefore(target.childNodes[0], body);
+					doc.insertBefore(target.childNodes[0], body);
 				
-				div.removeChild(body);
+				doc.removeChild(body);
 				
 				var frag = document.createDocumentFragment();
-				while(div.childNodes.length > 0)
-					frag.appendChild(div.childNodes[0]);
+				while(doc.childNodes.length > 0)
+					frag.appendChild(doc.childNodes[0]);
 				
 				node.parentElement.replaceChild(frag, node);
 			}
@@ -447,10 +450,10 @@ var lantern = {};
 	{
 		if(typeof html == "string")
 		{
-			var div = document.createElement("div");
-	 		div.innerHTML = html;
+			var parser = new DOMParser();
+			var doc = parser.parseFromString(html, "text/xml");
 			
-			return this.factory[id] = new Factory(id, div.children[0]);
+			return this.factory[id] = new Factory(id, doc.firstChild);
 		}
 		else
 		{
