@@ -1,5 +1,5 @@
 /**
- * lantern v0.1.2
+ * lantern v0.1.3
  */
 
 var lantern = {};
@@ -58,8 +58,34 @@ var lantern = {};
 			for(var i=0; i<matchList.length; i++)
 			{
 				var key = matchList[i].replace("{{", "").replace("}}", "");
-				if(!this.data.hasOwnProperty(key))
-					this.data[key] = undefined;
+				if(key.indexOf('.') != -1)
+				{
+					var last = null;
+					var split = key.split('.');
+					if(split.length > 0)
+					{
+						if(!this.data.hasOwnProperty(split[0]))
+							this.data[split[0]] = last = {};
+						else
+							last = this.data[split[0]];
+						
+						for(var j=1; j<split.length; j++)
+						{
+							if(!last.hasOwnProperty(split[j]))
+							{
+								if(split[j+1])
+									last = last[split[j]] = {};
+								else
+									last = last[split[j]] = undefined;
+							}
+						}
+					}
+				}
+				else
+				{
+					if(!this.data.hasOwnProperty(key))
+						this.data[key] = undefined;
+				}
 			}
 		}
 		
@@ -148,14 +174,53 @@ var lantern = {};
 	{
 		this.element.setAttribute(key, value);
 	};
+	
+	Component.prototype.getNodeList = function(parentKey, data, oldData)
+	{
+		var that = this;
+		var nodeList = [];
+		for(var key in data)
+		{
+			if(typeof data[key] == 'object')
+			{
+				var result = this.getNodeList(key, data[key], oldData[key]);
+				for(var i=0; i<result.length; i++)
+					nodeList.push(result[i]);
+			}
+			else
+			{
+				if((!oldData || data[key] != oldData[key]) || (data.hasOwnProperty(key) && (!oldData || !oldData.hasOwnProperty(key)))) //최초 컴포넌트 템플릿에 명시되어있는 데이터 중에서 바뀐것만 체크한다. 그럼 스코프 체크하..... 키값이 동일하다면 문제가 될듯.
+				{
+					var filter = function(node)
+					{
+						var regx = new RegExp("{{" + that.id + ":" + (parentKey ? parentKey + '.' : '') + key + "}}", "gi");
+						return node.originalText ? regx.test(node.originalText) : regx.test(node.textContent);
+					};
+					
+					var node = null;
+					var walker = document.createTreeWalker(this.element, NodeFilter.SHOW_TEXT, filter, false);
+					while(node = walker.nextNode())
+					{
+						nodeList.push(node);
+					}
+				}
+			}
+		}
+		
+		return nodeList;
+	};
 
 	Component.prototype.bindData = function()
 	{
 		var that = this;
-		var nodeList = [];
+		var nodeList = this.getNodeList('', this.data, this.oldData);
 		
 		for(var key in this.data)
 		{
+			if(typeof this.data[key] == 'object')
+			{
+				var data = this.data[key];
+			}
 			if((this.data[key] != this.oldData[key]) || (this.data.hasOwnProperty(key) && !this.oldData.hasOwnProperty(key))) //최초 컴포넌트 템플릿에 명시되어있는 데이터 중에서 바뀐것만 체크한다. 그럼 스코프 체크하..... 키값이 동일하다면 문제가 될듯.
 			{
 				var filter = function(node)
@@ -191,7 +256,25 @@ var lantern = {};
 				{
 					var key = matchList[j].replace("{{", "").replace("}}", "");
 					key = key.split(":")[1];
-					text = text.replace(matchList[j], this.data[key]);
+					if(key.indexOf('.') != -1)
+					{
+						var last = null;
+						var split = key.split('.');
+						if(split.length > 0)
+						{
+							last = this.data[split[0]];
+							for(var k=1; k<split.length; k++)
+							{
+								last = last[split[k]];
+							}
+						}
+						
+						text = text.replace(matchList[j], last);
+					}
+					else
+					{
+						text = text.replace(matchList[j], this.data[key]);
+					}
 				}
 				
 				var newNode = document.createTextNode(text);
@@ -258,21 +341,27 @@ var lantern = {};
 				}
 
 				//만약 tbody등의 것들이 왔을때 없어질수도 있는데.
-				var parser = new DOMParser();
-				var doc = parser.parseFromString(text, "text/xml");
+				var nodeName = text.trim().toLowerCase();
+				var type = 'div';
+				if(nodeName.substring(1, 3) == 'tr' || nodeName.substring(1, 3) == 'td' || nodeName.substring(1, 3) == 'th')
+					type = 'tbody';
+				else if(nodeName.substring(1, 4) == 'col')
+					type = 'colgroup';
+				else if(nodeName.substring(1, 9) == 'colgroup' || nodeName.substring(1, 6) == 'thead' || nodeName.substring(1, 6) == 'tbody' || nodeName.substring(1, 6) == 'tfoot' || nodeName.substring(1, 8) == 'caption')
+					type = 'table';
 				
-//				var div = document.createElement("div");
-//				div.innerHTML = text;
+				var div = document.createElement(type);
+				div.innerHTML = text;
 				
-				var body = doc.querySelector("bindBodyTarget");
+				var body = div.querySelector("bindBodyTarget");
 				while(target.childNodes.length > 0)
-					doc.insertBefore(target.childNodes[0], body);
+					div.insertBefore(target.childNodes[0], body);
 				
-				doc.removeChild(body);
+				div.removeChild(body);
 				
-				var frag = document.createDocumentFragment();
-				while(doc.childNodes.length > 0)
-					frag.appendChild(doc.childNodes[0]);
+				var frag = divument.createDocumentFragment();
+				while(div.childNodes.length > 0)
+					frag.appendChild(div.childNodes[0]);
 				
 				node.parentElement.replaceChild(frag, node);
 			}
@@ -450,10 +539,19 @@ var lantern = {};
 	{
 		if(typeof html == "string")
 		{
-			var parser = new DOMParser();
-			var doc = parser.parseFromString(html, "text/xml");
+			var nodeName = html.trim().toLowerCase();
+			var type = 'div';
+			if(nodeName.substring(1, 3) == 'tr' || nodeName.substring(1, 3) == 'td' || nodeName.substring(1, 3) == 'th')
+				type = 'tbody';
+			else if(nodeName.substring(1, 4) == 'col')
+				type = 'colgroup';
+			else if(nodeName.substring(1, 9) == 'colgroup' || nodeName.substring(1, 6) == 'thead' || nodeName.substring(1, 6) == 'tbody' || nodeName.substring(1, 6) == 'tfoot' || nodeName.substring(1, 8) == 'caption')
+				type = 'table';
 			
-			return this.factory[id] = new Factory(id, doc.firstChild);
+			var div = document.createElement(type);
+			div.innerHTML = html;
+				
+			return this.factory[id] = new Factory(id, div.children[0]);
 		}
 		else
 		{

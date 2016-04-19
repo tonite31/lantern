@@ -255,3 +255,27 @@ window.addEventListener('load', function()
 </body>
 </html>
 ```
+
+#### Bind object in object.
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>HelloWorld</title>
+<script src="../../src/lantern.js"></script>
+
+<script type="text/lantern" id="HelloWorld">
+<h1>Hello {{user.name}}!</h1>
+</script>
+	
+<script type="text/javascript">
+var HelloWorld = lantern.create("HelloWorld", document.getElementById("HelloWorld").innerHTML);
+HelloWorld.data.user = {name : 'your name'};
+</script>
+</head>
+<body>
+	<HelloWorld></HelloWorld>
+</body>
+</html>
+```

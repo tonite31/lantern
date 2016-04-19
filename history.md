@@ -1,5 +1,8 @@
 #History
 
+## 0.1.4
+Added a feature - Now can bind object in object.
+
 ## 0.1.3
 Fixed bug related create lantern object.
 
