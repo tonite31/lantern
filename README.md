@@ -216,3 +216,42 @@ var Children = lantern.create("Children", document.getElementById("Children").in
 
 </html>
 ```
+
+
+#### Create lantern object dynamically.
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>HelloWorld</title>
+<script src="../../src/lantern.js"></script>
+
+<script type="text/lantern" id="HelloWorld">
+<h1>Hello {{name}}!</h1>
+</script>
+	
+<script type="text/javascript">
+var HelloWorld = lantern.create("HelloWorld", document.getElementById("HelloWorld").innerHTML);
+HelloWorld.data.name = "your name";
+
+window.addEventListener('load', function()
+{
+	var HelloWorld = document.createElement('HelloWorld');
+	HelloWorld = lantern.compile(HelloWorld, 'HelloWorld');
+	
+	HelloWorld.update(function()
+	{
+		this.data.name = 'Dynamic';
+	});
+	
+	document.body.appendChild(HelloWorld.element);
+});
+
+</script>
+</head>
+<body>
+	
+</body>
+</html>
+```
