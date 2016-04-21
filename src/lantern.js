@@ -1,5 +1,5 @@
 /**
- * lantern v0.1.3
+ * lantern v0.1.4
  */
 
 var lantern = {};
@@ -88,7 +88,7 @@ var lantern = {};
 				}
 			}
 		}
-		
+
 		var html = this.element.innerHTML.replace(/{{/gi, '{{' + this.id + ':');
 		matchList = html.match(/<[^>]*{{[^}]*}}[^>]*>/gi);
 		if(matchList)
@@ -119,6 +119,31 @@ var lantern = {};
 				{
 					if(value.indexOf(":") == -1)
 					{
+						if(value.indexOf('.') != -1)
+						{
+							var key = value.replace('{{', '').replace('}}', '');
+							var last = null;
+							var split = key.split('.');
+							if(split.length > 0)
+							{
+								if(!this.data.hasOwnProperty(split[0]))
+									this.data[split[0]] = last = {};
+								else
+									last = this.data[split[0]];
+								
+								for(var k=1; k<split.length; k++)
+								{
+									if(!last.hasOwnProperty(split[k]))
+									{
+										if(split[k+1])
+											last = last[split[k]] = {};
+										else
+											last = last[split[k]] = undefined;
+									}
+								}
+							}
+						}
+						
 						value = value.replace(/{{/gi, '{{' + this.id + ':');
 						element.attributes[j].value = value;
 					}
@@ -300,7 +325,23 @@ var lantern = {};
 						scope = scope[0];
 						
 						if(scope == this.id)
-							value = value.replace(matchList[j], this.data[key]);
+						{
+							if(key.indexOf('.') != -1)
+							{
+								var last = null;
+								var split = key.split('.');
+								if(split.length > 0)
+								{
+									last = this.data[split[0]];
+									for(var k=1; k<split.length; k++)
+									{
+										last = last[split[k]];
+									}
+								}
+								
+								value = value.replace(matchList[j], last);
+							}
+						}
 						
 						this.elementListForDataChanging[i].setAttribute(attrKey, value);
 					}
